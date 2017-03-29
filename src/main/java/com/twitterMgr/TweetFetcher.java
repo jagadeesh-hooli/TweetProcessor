@@ -10,9 +10,17 @@
 //package us.mcguinness;
 package com.twitterMgr;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+
+import com.csvreader.CsvReader;
+import com.csvreader.CsvWriter;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import com.database.EnumRes;
 
@@ -36,7 +44,7 @@ public class TweetFetcher {
 	// allowed in the API
 	protected int TWEETS_PER_QUERY;
 
-	// This controls how many queries, maximum, we will make of Twitter before
+	// This contrtextols how many queries, maximum, we will make of Twitter before
 	// cutting off the results.
 	// You will retrieve up to MAX_QUERIES*TWEETS_PER_QUERY tweets.
 	//
@@ -49,14 +57,14 @@ public class TweetFetcher {
 	// returns as many results as you could
 	// ever want, so it's safe to assume we'll get multiple pages back...
 	protected String SEARCH_TERM;
-
+	
 		
 
 	public TweetFetcher(String SearchTerm) {
 		CONSUMER_KEY = "xz81qbMNskTmNvEkQjiIlzYzk";
 		CONSUMER_SECRET = "KF0p7MNi8UQLkAv6seMI83ATocYW1ejjUyLtJN3r2sBzT0Uc9J";
-		TWEETS_PER_QUERY = 10;
-		MAX_QUERIES = 5;
+		TWEETS_PER_QUERY = 4;
+		MAX_QUERIES = 3;
 		SEARCH_TERM = SearchTerm;
 	}
 
@@ -67,15 +75,23 @@ public class TweetFetcher {
 	 * printing cleaner
 	 *
 	 * @param text
-	 *            The text of a tweet, sometimes with embedded newlines and tabs
+	 *            The text of a tweet, sometimes with embedded newlines and tabs and many more
 	 * @return The text passed in, but with the newlines and tabs replaced
 	 */
 	public String cleanText(String text) {
+		text = text.replaceAll("((https?|ftp|gopher|telnet|file|Unsure|http):((//)|(\\\\))+[\\w\\d:#@%/;$()~_?\\+-=\\\\\\.&]*)", "");
+		text = text.replaceAll("[^a-zA-Z0-9 ]+", "");
+		text = text.replace("RT","");
+		text = text.replace(",", " ");
 		text = text.replace("\n", "\\n");
 		text = text.replace("\t", "\\t");
+	
+		
+		
 
 		return text;
 	}
+
 
 	
 	
@@ -144,7 +160,85 @@ public class TweetFetcher {
 
 	}
 
+	
+	public ArrayList<HashMap<String, String>> getTweetDetailsFromCSV(){
+		ArrayList<HashMap<String, String>> tweetList = new ArrayList<HashMap<String, String>>();
+		
+		try{
+			CsvReader tweets = new CsvReader(EnumRes.CLASSIFIEDTWEETSCSV.getValue());
+			
+			tweets.readHeaders();
+
+			while (tweets.readRecord())
+			{
+				
+				HashMap<String, String> tweetDict = new HashMap<String, String>();
+				tweetDict.put(EnumRes.TWEETID.getValue(), tweets.get(EnumRes.TWEETID.getValue()));
+				tweetDict.put(EnumRes.TWEETTOPIC.getValue(), tweets.get(EnumRes.TWEETTOPIC.getValue()));
+				tweetDict.put(EnumRes.TWEETDATE.getValue(), tweets.get(EnumRes.TWEETDATE.getValue()));
+				tweetDict.put(EnumRes.TWEETSCORE.getValue(), tweets.get(EnumRes.TWEETSCORE.getValue()));
+				tweetDict.put(EnumRes.TWEETDESC.getValue(), tweets.get(EnumRes.TWEETDESC.getValue()));
+				tweetList.add(tweetDict);
+			
+				
+				
+				
+				// perform program logic here
+				//System.out.println(productID + ":" + productName);
+			}
+			
+		}catch(Exception e){
+			
+		}
+		return tweetList;
+	}
+	
+	
+	public void runPythonClassifier() {
+		// TODO Auto-generated method stub
+		String prg = "import sys";
+	       String s = null;
+		
+		try {
+			//BufferedWriter out = new BufferedWriter(new FileWriter("/home/jagadeesh/PycharmProjects/TweetAnalyzer/a.py"));
+			//out.write(prg);
+			//out.close();
+			Process p = Runtime.getRuntime().exec("python /home/jagadeesh/PycharmProjects/TweetAnalyzer/Test.py");
+			   BufferedReader stdInput = new BufferedReader(new 
+		                 InputStreamReader(p.getInputStream()));
+
+		            BufferedReader stdError = new BufferedReader(new 
+		                 InputStreamReader(p.getErrorStream()));
+
+		         /*true  if(stdError!=null){
+		        	   return -1;
+		           }*/
+		        	 
+		           
+		            
+		            // read the output from the command
+	            System.out.println("Here is the standard output of the command:\n");
+		            while ((s = stdInput.readLine()) != null) {
+		                System.out.println(s);
+         }
+//		            
+//		            // read any errors from the attempted command
+		            System.out.println("Here is the standard error of the command (if any):\n");
+		            while ((s = stdError.readLine()) != null) {
+		                System.out.println(s);
+	            }
+		           
+		            
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//return 0;
+		
+	}
+	
 	public ArrayList<HashMap<String, String>> getTweetList() {
+
 		// We're curious how many tweets, in total, we've retrieved. Note that
 		// TWEETS_PER_QUERY is an upper limit,
 		// but Twitter can and often will retrieve far fewer tweets
@@ -196,9 +290,19 @@ public class TweetFetcher {
 			// searchTweetsRateLimit.getSecondsUntilReset());
 
 			// This will hold the fetched tweets which will be read by python ML
-			PrintWriter pw = new PrintWriter(
+		/*	PrintWriter pw = new PrintWriter(
 					new File("/home/jagadeesh/PycharmProjects/TweetAnalyzer/TempDatafiles/RawTweetsTemp.csv"));
-			StringBuilder tweets = new StringBuilder();
+			*/
+			String outputFile="/home/jagadeesh/PycharmProjects/TweetAnalyzer/TempDatafiles/RawTweetsTemp.csv";
+			CsvWriter csvOutput = new CsvWriter(new FileWriter(outputFile, false), ',');
+		
+			csvOutput.write(EnumRes.TWEETID.getValue());
+			csvOutput.write(EnumRes.TWEETTOPIC.getValue());
+			csvOutput.write(EnumRes.TWEETDATE.getValue());
+			csvOutput.write(EnumRes.TWEETDESC.getValue());
+			csvOutput.endRecord();
+			
+			
 
 			// This is the loop that retrieve multiple blocks of tweets from
 			// Twitter
@@ -213,16 +317,7 @@ public class TweetFetcher {
 					System.out.printf("!!! Sleeping for %d seconds due to rate limits\n",
 							searchTweetsRateLimit.getSecondsUntilReset());
 
-					// If you sleep exactly the number of seconds, you can make
-					// your query a bit too early
-					// and still get an error for exceeding rate limitations
-					//
-					// Adding two seconds seems to do the trick. Sadly, even
-					// just adding one second still triggers a
-					// rate limit exception more often than not. I have no idea
-					// why, and I know from a Comp Sci
-					// standpoint this is really bad, but just add in 2 seconds
-					// and go about your business. Or else.
+					
 					Thread.sleep((searchTweetsRateLimit.getSecondsUntilReset() + 2) * 1000l);
 				}
 
@@ -277,19 +372,22 @@ public class TweetFetcher {
 					// s.getUser().getScreenName(),
 					// cleanText(s.getText()));
 
-					HashMap<String, String> tweetDict = new HashMap<String, String>();
+				/*	HashMap<String, String> tweetDict = new HashMap<String, String>();
 					tweetDict.put(EnumRes.TWEETID.getValue(), String.valueOf(s.getId()));
 					tweetDict.put(EnumRes.TWEETTOPIC.getValue(), SEARCH_TERM);
 					tweetDict.put(EnumRes.TWEETDESC.getValue(), cleanText(s.getText()));
 					tweetDict.put(EnumRes.TWEETDATE.getValue(), s.getCreatedAt().toString());
 
-					tweetList.add(tweetDict);
+					tweetList.add(tweetDict);*/
 
-					// keep appending the tweet
-					tweets.append("\"");
-					tweets.append(cleanText(s.getText()));
-					tweets.append("\"");
-					tweets.append("\n");
+			
+					
+					
+					csvOutput.write(String.valueOf(s.getId()));
+					csvOutput.write(SEARCH_TERM);
+					csvOutput.write(s.getCreatedAt().toString());
+					csvOutput.write(cleanText(s.getText()));
+					csvOutput.endRecord();
 
 				}
 
@@ -302,9 +400,9 @@ public class TweetFetcher {
 
 			}
 			// copy the content of stringbuilder to file
-			pw.write(tweets.toString());
-			pw.close();
-
+			//pw.write(tweets.toString());
+			//pw.close();
+			csvOutput.close();
 		} catch (Exception e) {
 			// Catch all -- you're going to read the stack trace and figure out
 			// what needs to be done to fix it
@@ -315,7 +413,17 @@ public class TweetFetcher {
 		}
 
 		System.out.printf("\n\nA total of %d tweets retrieved\n", totalTweets);
+		runPythonClassifier();
+		tweetList = getTweetDetailsFromCSV();
+		/*if(runPythonClassifier()!=-1){
+			tweetList = getTweetDetailsFromCSV();
+		}*/
 		return tweetList;
 
 	}
+
+	
+	
+	
+
 }

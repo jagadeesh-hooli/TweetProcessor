@@ -1,9 +1,8 @@
 package com.database;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+import java.util.Map.Entry;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
@@ -11,6 +10,7 @@ import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
@@ -62,6 +62,7 @@ public class DbManager {
 			HTableDescriptor tableName = new HTableDescriptor(TableName.valueOf(EnumRes.TWEETINFO.getValue()));
 
 			tableName.addFamily(new HColumnDescriptor(EnumRes.TWEETDETAILS.getValue()));
+			tableName.addFamily(new HColumnDescriptor(EnumRes.TWEETTOPICS_CF.getValue()));
 
 			if (!admin.tableExists(tableName.getTableName())) {
 				System.out.print("Creating the TweetDetails table. ");
@@ -93,7 +94,8 @@ public class DbManager {
 
 	}
 
-	protected void getTableDataFromColumnValue(HashMap<String, String> queryMetaData) {
+	
+	protected ResultScanner getTableDataFromColumnValue(HashMap<String, String> queryMetaData) {
 		connection = getConnection();
 		Table table = null;
 		ResultScanner scanResult = null;
@@ -116,26 +118,34 @@ public class DbManager {
 
 			scanResult = table.getScanner(userScan);
 
-			String previousRowKey = null;
-			HashMap<String, String> queryDict = new HashMap<String, String>();
-			List<HashMap<String, String>> queryResultList = new ArrayList<HashMap<String, String>>();
-
-			for (Result res : scanResult) {
-				for (Cell cell : res.listCells()) {
-					String row = new String(CellUtil.cloneRow(cell));
-					String family = new String(CellUtil.cloneFamily(cell));
-					String column = new String(CellUtil.cloneQualifier(cell));
-					String value = new String(CellUtil.cloneValue(cell));
-
-					System.out.println(row + " " + family + " " + column + " " + value);
-				}
-			}
-
+							   
+			
 		} catch (Exception e) {
 			// TODO: handle exception
-			System.out.println("Insertion of data failed:" + e.getMessage());
+			System.out.println("Selection of data from column value failed!:" + e.getMessage());
 		}
-
+		return scanResult;
 	}
 
+	protected ResultScanner getTableDataFromColumnName(HashMap<String, String> queryMetaData) {
+		connection = getConnection();
+		Table table = null;
+		ResultScanner scanResult = null;
+
+		try {
+			table = connection.getTable(TableName.valueOf(queryMetaData.get(EnumRes.TABLENAME.getValue())));
+		
+
+			Scan userScan = new Scan();
+			userScan.addColumn(Bytes.toBytes(queryMetaData.get(EnumRes.COLUMNFAMILYNAME.getValue())), Bytes.toBytes(queryMetaData.get(EnumRes.COLUMNNAME.getValue())));
+			scanResult = table.getScanner(userScan);
+							   
+			
+		} catch (Exception e) {
+			// TODO: handle exception
+			System.out.println("Selection of data from column name failed!:" + e.getMessage());
+		}
+		return scanResult;
+	}
+	
 }

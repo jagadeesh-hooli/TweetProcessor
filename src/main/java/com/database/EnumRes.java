@@ -3,6 +3,8 @@ package com.database;
 public enum EnumRes {
 	TWEETINFO("TweetInfo"),
 	TWEETDETAILS("TweetDetails"),
+	TWEETTOPICS_CF("TweetTopics"),
+	TWEETTOPICNAME("TopicName"),
 	TWEETID("Id"),
 	TWEETDESC("Desc"),
 	TWEETTOPIC("Topic"),
@@ -12,7 +14,10 @@ public enum EnumRes {
 	COLUMNNAME("ColumnName"),
 	OPERATOR("Operator"),
 	EQUAL("Equal"),
-	COLUMNVALUE("ColumnValue");
+	COLUMNVALUE("ColumnValue"),
+	TWEETSCORE("SentiScore"),
+	CLASSIFIEDTWEETSCSV("/home/jagadeesh/PycharmProjects/TweetAnalyzer/TempDatafiles/ClassifiedTweetsTemp.csv"),
+	PYTHONCLASSIFIER("/home/jagadeesh/PycharmProjects/TweetAnalyzer/Test.py");
 	
 
 	private String value;
