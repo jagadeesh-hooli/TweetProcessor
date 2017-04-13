@@ -2,6 +2,7 @@ package com.database;
 
 import com.csvreader.CsvReader;
 import com.twitterMgr.TweetFetcher;
+
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -24,6 +25,9 @@ public class TweetManager {
 	private static byte[] TWEETDATE_COLUMN = Bytes.toBytes(EnumRes.TWEETDATE.getValue());
 	private static byte[] TWEETSCORE_COLUMN = Bytes.toBytes(EnumRes.TWEETSCORE.getValue());
 
+	protected TweetManager twtMgr;
+	protected DbManager dbmgr;
+
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		long startTime = System.currentTimeMillis();
@@ -33,13 +37,14 @@ public class TweetManager {
 		DbManager dbMgr = new DbManager();
 		//dbMgr.createTable();
 
-		String topicName ="#arrow";
-		//TweetFetcher tfr = new TweetFetcher(topicName);
+		String topicName = "visaban";
+		TweetFetcher tfr = new TweetFetcher(topicName);
 
 		//twtMgr.insertTweets(tfr.getTweetList(), dbMgr);
 		//twtMgr.insertTweetTopic(topicName, dbMgr);
 
-		List<HashMap<String, String>> tweetDataList = twtMgr.getTweetDataList("#trump", dbMgr);
+		List<HashMap<String, String>> tweetDataList = twtMgr.getTweetDataList(topicName, dbMgr);
+		//List<HashMap<String, String>> tweetDataList = twtMgr.getTweetListFromTopic("#trump");
 		List<String> tweetTopicList = twtMgr.getTweetTopicList(dbMgr);
 		long estimatedTime = System.currentTimeMillis() - startTime;
 		double elapsedSeconds = estimatedTime / 1000.0;
@@ -47,12 +52,51 @@ public class TweetManager {
 
 	}
 
-	public void insertTweets(ArrayList<HashMap<String, String>> tweetList, DbManager dbmgr) {
+	protected TweetManager getTwitterManager() {
+		if (twtMgr != null)
+			return twtMgr;
+		else
+			return new TweetManager();
+
+	}
+
+	protected DbManager getDbManager() {
+		if (dbmgr != null)
+			return dbmgr;
+		else
+			return new DbManager();
+
+	}
+
+
+	public List<HashMap<String, String>> getTweetListFromTopic(String topicName) {
+
+		return getTwitterManager().getTweetDataList(topicName, getDbManager());
+	}
+
+	public List<String> getAllTweetTopics(){
+
+		return getTwitterManager().getTweetTopicList(getDbManager());
+	}
+
+	public int insertTweetsFromTopicName(String topicName){
+		TweetFetcher tfr = new TweetFetcher(topicName);
+		int tweetInsertRes,tweetTopicInsertRes = -1;
+		tweetInsertRes = getTwitterManager().insertTweets(tfr.getTweetList(),getDbManager());
+		if(tweetInsertRes==2)
+			tweetTopicInsertRes = getTwitterManager().insertTweetTopic(topicName,getDbManager());
+		if(tweetTopicInsertRes ==2)
+			return tweetInsertRes;
+		else
+			return -1;
+	}
+
+	public int insertTweets(ArrayList<HashMap<String, String>> tweetList, DbManager dbmgr) {
 
 		HashMap<String, String> tblMetaData = new HashMap<String, String>();
 		tblMetaData.put(EnumRes.TABLENAME.getValue(), EnumRes.TWEETINFO.getValue());
 		tblMetaData.put(EnumRes.COLUMNFAMILYNAME.getValue(), EnumRes.TWEETDETAILS.getValue());
-		
+
 		List<Put> tweetPutList = new ArrayList<Put>();
 		for (HashMap<String, String> tweetDict : tweetList) {
 
@@ -68,10 +112,10 @@ public class TweetManager {
 
 			tweetPutList.add(tweetPut);
 		}
-		dbmgr.insertData(tblMetaData, tweetPutList);
+		return dbmgr.insertData(tblMetaData, tweetPutList);
 	}
 
-	public void insertTweetTopic(String topicName, DbManager dbmgr) {
+	public int insertTweetTopic(String topicName, DbManager dbmgr) {
 
 		HashMap<String, String> tblMetaData = new HashMap<String, String>();
 		tblMetaData.put(EnumRes.TABLENAME.getValue(), EnumRes.TWEETINFO.getValue());
@@ -85,7 +129,7 @@ public class TweetManager {
 
 		tweetPutList.add(tweetPut);
 
-		dbmgr.insertData(tblMetaData, tweetPutList);
+		return dbmgr.insertData(tblMetaData, tweetPutList);
 	}
 
 	public List<HashMap<String, String>> getTweetDataList(String topicName, DbManager dbmgr) {
@@ -105,7 +149,7 @@ public class TweetManager {
 	public List<HashMap<String, String>> getTweetDetailsListFromScan(ResultScanner scanResult) {
 
 		HashMap<String, String> queryDict = new HashMap<String, String>();
-		List<HashMap<String, String>> queryResultList = new ArrayList<HashMap<String, String>>();
+			List<HashMap<String, String>> queryResultList = new ArrayList<HashMap<String, String>>();
 		String oldRow = null;
 
 		for (Result res : scanResult) {

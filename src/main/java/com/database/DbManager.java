@@ -80,17 +80,18 @@ public class DbManager {
 
 	}
 
-	protected void insertData(HashMap<String, String> tblMetaData, List<Put> tblDataList) {
+	protected int insertData(HashMap<String, String> tblMetaData, List<Put> tblDataList) {
 		connection = getConnection();
 		Table table = null;
 		try {
 			table = connection.getTable(TableName.valueOf(tblMetaData.get(EnumRes.TABLENAME.getValue())));
 			table.put(tblDataList);
-
+			return 2;
 		} catch (Exception e) {
 			// TODO: handle exception
 			System.out.println("Insertion of data failed:" + e.getMessage());
 		}
+		return -1;
 
 	}
 

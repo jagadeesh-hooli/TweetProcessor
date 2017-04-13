@@ -63,7 +63,7 @@ public class TweetFetcher {
 	public TweetFetcher(String SearchTerm) {
 		CONSUMER_KEY = "xz81qbMNskTmNvEkQjiIlzYzk";
 		CONSUMER_SECRET = "KF0p7MNi8UQLkAv6seMI83ATocYW1ejjUyLtJN3r2sBzT0Uc9J";
-		TWEETS_PER_QUERY = 4;
+		TWEETS_PER_QUERY = 50;
 		MAX_QUERIES = 3;
 		SEARCH_TERM = SearchTerm;
 	}
@@ -321,7 +321,7 @@ public class TweetFetcher {
 					Thread.sleep((searchTweetsRateLimit.getSecondsUntilReset() + 2) * 1000l);
 				}
 
-				Query q = new Query(SEARCH_TERM); // Search for tweets that
+				Query q = new Query("#"+SEARCH_TERM); // Search for tweets that
 													// contains this term
 				q.setCount(TWEETS_PER_QUERY); // How many tweets, max, to
 												// retrieve
